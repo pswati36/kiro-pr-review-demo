@@ -1,0 +1,17 @@
+{
+  "name": "pr-reviewer",
+  "description": "Read-only PR reviewer for CI. Reviews a git diff and returns a markdown review with a verdict.",
+  "prompt": "file://../prompts/pr-reviewer.md",
+  "tools": ["read", "shell"],
+  "allowedTools": ["read"],
+  "toolsSettings": {
+    "shell": {
+      "allowedCommands": ["git diff.*", "git log.*", "git show.*", "grep .*", "cat .*"],
+      "denyByDefault": true
+    }
+  },
+  "resources": [
+    "file://.kiro/steering/**/*.md",
+    "skill://.kiro/skills/*/SKILL.md"
+  ]
+}

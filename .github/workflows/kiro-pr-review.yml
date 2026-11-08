@@ -1,0 +1,69 @@
+name: Kiro PR Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: kiro-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    # Skip fork PRs: secrets are not exposed to them (never use pull_request_target here)
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Kiro CLI
+        run: |
+          curl -fsSL https://cli.kiro.dev/install | bash
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Build diff
+        run: |
+          git diff origin/${{ github.base_ref }}...HEAD > /tmp/pr.diff
+          echo "Diff lines: $(wc -l < /tmp/pr.diff)"
+
+      - name: Run Kiro reviewer (headless)
+        env:
+          KIRO_API_KEY: ${{ secrets.KIRO_API_KEY }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          kiro-cli --version
+          kiro-cli chat --no-interactive \
+            --agent pr-reviewer \
+            --trust-tools=read,shell \
+            "Review the PR diff in /tmp/pr.diff (base: origin/$BASE_REF). Follow your review instructions and output only the markdown review." \
+            | tee /tmp/review.md
+
+      - name: Post / update PR comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const marker = '<!-- kiro-pr-review -->';
+            const body = marker + '\n## 🤖 Kiro PR Review\n\n' + fs.readFileSync('/tmp/review.md', 'utf8');
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number });
+            const existing = comments.find(c => c.body && c.body.startsWith(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body });
+            }
+
+      - name: Fail on blocking verdict (optional gate)
+        run: |
+          if grep -q "Verdict\*\*: BLOCK" /tmp/review.md; then
+            echo "Kiro flagged blocking issues"; exit 1
+          fi
