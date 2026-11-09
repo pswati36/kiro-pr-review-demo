@@ -2,7 +2,7 @@
 import boto3, pickle
 
 AWS_SECRET = "AKIAEXAMPLE1234567890"  # hardcoded credential
-
+// Comments for handler
 def handler(event, context):
     try:
         data = pickle.loads(event["body"].encode())  # unsafe deserialization
