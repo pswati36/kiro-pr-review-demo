@@ -32,6 +32,10 @@ jobs:
         run: |
           git diff origin/${{ github.base_ref }}...HEAD > /tmp/pr.diff
           echo "Diff lines: $(wc -l < /tmp/pr.diff)"
+          git diff --name-only origin/${{ github.base_ref }}...HEAD > /tmp/changed-files.txt
+          grep '^\.kiro/steering/' /tmp/changed-files.txt > /tmp/steering-changed.txt || true
+          echo "Changed files:"; cat /tmp/changed-files.txt
+          echo "Steering files changed: $(wc -l < /tmp/steering-changed.txt)"
 
       - name: Run Kiro reviewer (headless)
         env:
@@ -42,7 +46,7 @@ jobs:
           kiro-cli chat --no-interactive \
             --agent pr-reviewer \
             --trust-tools=read,shell \
-            "Review the PR diff in /tmp/pr.diff (base: origin/$BASE_REF). Follow your review instructions and output only the markdown review." \
+            "Review the PR diff in /tmp/pr.diff (base: origin/$BASE_REF). Changed files are listed in /tmp/changed-files.txt and changed steering files in /tmp/steering-changed.txt. Follow your review instructions, including the steering drift check, and output only the markdown review." \
             | tee /tmp/review.md
 
       - name: Post / update PR comment

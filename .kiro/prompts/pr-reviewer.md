@@ -7,6 +7,11 @@ Review for, in priority order:
 2. Correctness: logic bugs, unhandled errors/edge cases, race conditions
 3. Tests: new/changed logic without tests
 4. Maintainability: naming, duplication, dead code, debug output left in
+5. Steering drift: compare the diff with the rules in .kiro/steering/*.md
+   - The PR changes a convention, pattern, library, auth/API approach or project structure that a steering file describes, but /tmp/steering-changed.txt does not include that file -> report it with severity "Drift" and name the steering file and the rule to update.
+   - The PR edits a steering file -> check the new rule matches the code in this diff and contains no "previously/now" history or contradictory old rules.
+   - New code that breaks a current steering rule is a normal issue (category 1-4), not drift.
+   - If no drift is found, say "No steering drift detected."
 
 Rules:
 - Only report issues you can point to in the diff (file + line). Mark each **Confirmed** or **Suspected**.
@@ -23,6 +28,9 @@ Output exactly this markdown:
 ### Issues
 | # | Severity | File:Line | Issue | Suggested fix |
 |---|---|---|---|---|
+
+### Steering drift
+- <"No steering drift detected." or: steering file -> rule that is now out of date -> suggested new wording>
 
 ### Good stuff
 - <1-2 things done well>

@@ -21,6 +21,11 @@ PR opened → Actions → git diff → kiro-cli --no-interactive --agent pr-revi
 | `.kiro/steering/review-standards.md` | Team standards loaded into the reviewer |
 | `demo/sample_bad_change.py` | Seeded issues: hardcoded key, pickle, bare except, hardcoded region, debug print |
 
+## Steering drift check
+Kiro also checks whether a PR changes a pattern that `.kiro/steering/` describes without updating the steering file in the same PR. The workflow passes the list of changed files and changed steering files to the reviewer, and drift findings appear in their own **Steering drift** section of the review comment.
+
+To demo it, open a second PR that adds `demo/sample_drift_change.py` under `src/`. It switches DynamoDB access to a new pattern without editing `review-standards.md`, so Kiro should flag drift. Then push a commit that updates the Data access rule and watch the finding clear.
+
 ## Demo talking points
 - **Same agent locally and in CI**: `kiro-cli chat --agent pr-reviewer` gives devs the identical review before pushing.
 - **Governance**: read-only tools, shell allow-list, no fork-PR secrets, admin policies still apply to API-key sessions.
